@@ -39,55 +39,22 @@ claude-up          # Starts with current directory mounted
 claude-compose down # Stop
 ```
 
-## Adding Skills via Claude Code (MCP)
+## Adding Skills via Claude Code
 
-Skill_Seekers is integrated with Claude Code through MCP, allowing you to generate documentation skills using natural language.
+From inside the container, use Claude Code to generate documentation skills with natural language:
 
-### MCP Setup
-
-1. **Create MCP config directory** (on your host):
 ```bash
-mkdir -p ~/.config/claude-code
+# Inside container
+cd ~/workspace
+claude
 ```
 
-2. **Add Skill_Seekers MCP server** to `~/.config/claude-code/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "skill-seeker": {
-      "command": "docker",
-      "args": [
-        "compose",
-        "-f", "/path/to/claudedevenv/docker-compose.yml",
-        "exec",
-        "-T",
-        "claude-dev",
-        "python3",
-        "/home/developer/skill-seekers/mcp/server.py"
-      ]
-    }
-  }
-}
+Then ask Claude to generate skills:
 ```
-
-3. **Restart Claude Code**
-
-### Using Skills in Claude Code
-
-Ask Claude Code in natural language:
-
-```
-"List all available configs"
 "Generate a React skill from https://react.dev/"
 "Create a Tailwind CSS skill from https://tailwindcss.com/docs"
-"Scrape docs using configs/vue.json"
+"Generate a Vue skill from https://vuejs.org/guide/"
 ```
-
-### Available Pre-configured Skills
-
-Located in the container at `~/skill-seekers/configs/`:
-- react, vue, django, fastapi
-- tailwind, kubernetes, godot, astro
 
 ## Agent OS
 
@@ -115,9 +82,9 @@ Creates `agent-os/` and `.claude/` directories with 15 standards, 4 Claude Code 
 
 ## Installed Tools
 
-- Claude Code 2.0.22
+- Claude Code 
 - Python 3.11.14 (requests, beautifulsoup4, mcp)
-- Node.js 20.11.1
-- Agent OS 2.0.5
+- Node.js 
+- Agent OS 
 - Skill_Seekers (with MCP server)
-- vim 9.0, git, curl, wget
+- vim , git, curl, wget
