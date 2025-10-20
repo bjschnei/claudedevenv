@@ -1,0 +1,11 @@
+services:
+  claude-dev:
+    build: .
+    container_name: claude-code-dev
+    volumes:
+      - "${HOME}/.claude:/home/developer/.claude"
+      - "${HOME}/agent-os:/home/developer/agent-os"
+      - "${PROJECT_DIR:-.}:/home/developer/workspace"
+    working_dir: /home/developer/workspace
+    stdin_open: true
+    tty: true

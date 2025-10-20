@@ -1,0 +1,12 @@
+services:
+  claude-dev-fresh:
+    build: ..
+    container_name: claude-test-fresh
+    volumes:
+      - ../test-fresh/.claude:/home/developer/.claude
+      - ../test-fresh/agent-os:/home/developer/agent-os
+      - ../test-fresh/skill-seekers:/home/developer/skill-seekers
+      - ../test-fresh:/home/developer/workspace
+    working_dir: /home/developer/workspace
+    stdin_open: true
+    tty: true
