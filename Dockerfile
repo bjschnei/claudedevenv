@@ -64,8 +64,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/buildermethods/agent-os/main/sc
         -o /tmp/base-install.sh \
     && chmod +x /tmp/base-install.sh \
     && /tmp/base-install.sh || echo "Warning: Agent OS installation failed but continuing" \
-    && rm -f /tmp/base-install.sh \
-    && cp -r /home/$USER/agent-os /home/$USER/.agent-os-template
+    && rm -f /tmp/base-install.sh
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD claude --version > /dev/null 2>&1 || exit 1

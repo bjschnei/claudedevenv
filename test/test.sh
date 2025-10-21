@@ -22,10 +22,13 @@ CONTAINER_ID=$(docker run -d claude-code-dev sleep 30)
 sleep 3
 docker ps --format '{{.ID}}' | grep -q "^${CONTAINER_ID:0:12}" && test_passed "Container starts" || test_failed "Container failed to start"
 
-test_info "Verifying directory structure..."
+test_info "Verifying built-in directory structure..."
 docker exec $CONTAINER_ID test -d /home/developer/.claude && test_passed ".claude exists" || test_failed ".claude missing"
-docker exec $CONTAINER_ID test -d /home/developer/agent-os && test_passed "agent-os exists" || test_failed "agent-os missing"
-docker exec $CONTAINER_ID test -d /home/developer/skill-seekers && test_passed "skill-seekers exists" || test_failed "skill-seekers missing"
+docker exec $CONTAINER_ID test -d /home/developer/agent-os && test_passed "agent-os built-in" || test_failed "agent-os missing"
+docker exec $CONTAINER_ID test -d /home/developer/skill-seekers && test_passed "skill-seekers built-in" || test_failed "skill-seekers missing"
+
+test_info "Verifying agent-os has scripts..."
+docker exec $CONTAINER_ID test -f /home/developer/agent-os/scripts/project-install.sh && test_passed "project-install.sh exists" || test_failed "project-install.sh missing"
 
 test_info "Verifying tool versions..."
 docker exec $CONTAINER_ID python3 --version > /dev/null && test_passed "Python 3.11" || test_failed "Python missing"
@@ -51,33 +54,62 @@ docker exec $CONTAINER_ID bash -c "timeout 2 python3 /home/developer/skill-seeke
 docker stop $CONTAINER_ID > /dev/null 2>&1
 docker rm $CONTAINER_ID > /dev/null 2>&1
 
-test_info "Testing fresh environment with docker-compose..."
-mkdir -p test-fresh/.claude test-fresh/agent-os test-fresh/skill-seekers
+# Test 1: Fresh project - should auto-initialize agent-os
+test_info "Testing fresh project (auto-initialization)..."
+mkdir -p test-fresh/.claude
 docker-compose -f test/docker-compose.test.yml up -d > /dev/null 2>&1
 sleep 5
 
-docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -f /home/developer/.claude/.initialized && test_passed "Fresh init OK" || test_failed "Fresh init failed"
-docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -d /home/developer/.claude/skills && test_passed "Skills dir created" || test_failed "Skills dir missing"
-docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -d /home/developer/agent-os && test_passed "Agent OS dir OK" || test_failed "Agent OS dir missing"
-docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -d /home/developer/skill-seekers && test_passed "Skill_Seekers dir OK" || test_failed "Skill_Seekers dir missing"
+docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -f /home/developer/.claude/.initialized && test_passed "Claude init OK" || test_failed "Claude init failed"
+docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -d /home/developer/workspace/agent-os && test_passed "Agent OS auto-initialized in project" || test_failed "Agent OS not initialized"
+docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -d /home/developer/workspace/.claude && test_passed "Project .claude created" || test_failed "Project .claude missing"
 
 docker-compose -f test/docker-compose.test.yml down > /dev/null 2>&1
-rm -rf test-fresh
 
-test_info "Testing existing directory preservation..."
-mkdir -p test-home/.claude/existing-skills test-home/agent-os/existing-profiles test-home/skill-seekers/existing-configs
+# Test 2: Existing project - should NOT re-initialize
+test_info "Testing existing project (no re-initialization)..."
+mkdir -p test-fresh/agent-os/custom
+echo "existing" > test-fresh/agent-os/custom/marker.txt
+docker-compose -f test/docker-compose.test.yml up -d > /dev/null 2>&1
+sleep 5
+
+docker-compose -f test/docker-compose.test.yml exec -T claude-dev-fresh test -f /home/developer/workspace/agent-os/custom/marker.txt && test_passed "Existing agent-os preserved" || test_failed "Existing agent-os modified"
+
+docker-compose -f test/docker-compose.test.yml down > /dev/null 2>&1
+
+# Test 3: Custom profile import
+test_info "Testing custom profile import..."
+rm -rf test-fresh test-custom-profiles
+mkdir -p test-fresh/.claude
+mkdir -p test-custom-profiles/profiles/custom
+echo "custom profile" > test-custom-profiles/profiles/custom/test.md
+
+docker run -dit --name test-custom-import \
+    -e IMPORT_AGENT_OS_PROFILES=/custom-agent-os \
+    -v "$(pwd)/test-fresh/.claude:/home/developer/.claude" \
+    -v "$(pwd)/test-fresh:/home/developer/workspace" \
+    -v "$(pwd)/test-custom-profiles:/custom-agent-os" \
+    claude-code-dev > /dev/null 2>&1
+sleep 5
+
+docker exec test-custom-import test -f /home/developer/workspace/agent-os/profiles/custom/test.md && test_passed "Custom profiles imported" || test_failed "Custom profiles not imported"
+
+docker stop test-custom-import > /dev/null 2>&1
+docker rm test-custom-import > /dev/null 2>&1
+rm -rf test-fresh test-custom-profiles
+
+# Test 4: .claude config preservation
+test_info "Testing .claude preservation..."
+mkdir -p test-home/.claude/existing-skills
 echo "test" > test-home/.claude/existing-skills/test-skill.txt
-echo "test" > test-home/agent-os/existing-profiles/test-profile.txt
 
 docker run -dit --name test-existing \
     -v "$(pwd)/test-home/.claude:/home/developer/.claude" \
-    -v "$(pwd)/test-home/agent-os:/home/developer/agent-os" \
-    -v "$(pwd)/test-home/skill-seekers:/home/developer/skill-seekers" \
+    -v "$(pwd)/test-home:/home/developer/workspace" \
     claude-code-dev > /dev/null 2>&1
 sleep 3
 
 docker exec test-existing test -f /home/developer/.claude/existing-skills/test-skill.txt && test_passed "Existing .claude preserved" || test_failed "Existing .claude lost"
-docker exec test-existing test -f /home/developer/agent-os/existing-profiles/test-profile.txt && test_passed "Existing agent-os preserved" || test_failed "Existing agent-os lost"
 
 docker stop test-existing > /dev/null 2>&1
 docker rm test-existing > /dev/null 2>&1
@@ -85,6 +117,13 @@ rm -rf test-home
 
 echo ""
 echo -e "${GREEN}🎉 All tests passed!${NC}"
+echo ""
+echo "Test scenarios validated:"
+echo "  ✓ Built-in agent-os in container"
+echo "  ✓ Fresh project auto-initialization"
+echo "  ✓ Existing project preservation"
+echo "  ✓ Custom profile import"
+echo "  ✓ .claude config preservation"
 echo ""
 echo "Usage:"
 echo "  docker-compose up -d"

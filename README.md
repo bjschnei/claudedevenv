@@ -58,24 +58,27 @@ Then ask Claude to generate skills:
 
 ## Agent OS
 
-Spec-driven development system with multi-agent mode.
+Spec-driven development system with multi-agent mode. Agent OS is built into the container and **automatically initialized** in your project on first run.
 
-**Install in your project:**
+When you start the container for the first time, it will:
+- Detect if `agent-os/` exists in your project
+- If not, automatically run the setup
+- Create `agent-os/` and `.claude/` directories with 15 standards, 4 Claude Code commands, and 13 agents
+
+**Using custom Agent OS profiles (optional):**
+If you have a customized agent-os installation on your host:
 ```bash
-# Inside container
-cd ~/workspace/my-project
-~/agent-os/scripts/project-install.sh
+export IMPORT_AGENT_OS_PROFILES=/path/to/your/agent-os
+claude-up
 ```
-
-Creates `agent-os/` and `.claude/` directories with 15 standards, 4 Claude Code commands, and 13 agents.
 
 ## Data Persistence
 
 | Container Path | Host Path | Purpose |
 |---------------|-----------|---------|
 | `~/.claude` | `${HOME}/.claude` | Claude config, auth, skills |
-| `~/agent-os` | `${HOME}/agent-os` | Agent OS base installation |
 | `~/workspace` | Current directory | **Your project files** |
+| `~/agent-os` | Built into image | Agent OS base installation |
 | `~/skill-seekers` | Built into image | Skill generator tool |
 
 **Always work in `~/workspace`** inside the container to ensure your files persist.
