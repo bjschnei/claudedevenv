@@ -12,7 +12,7 @@ if [ ! -d ~/workspace/agent-os ]; then
     if [ -f ~/agent-os/scripts/project-install.sh ]; then
         echo "Initializing Agent OS in project..."
         cd ~/workspace
-        bash ~/agent-os/scripts/project-install.sh --multi-agent-mode 2>/dev/null || true
+        bash ~/agent-os/scripts/project-install.sh 2>/dev/null || true
         echo "Agent OS initialized"
     fi
 fi

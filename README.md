@@ -18,6 +18,9 @@ PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml build
 
 # 4. Start container
 PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
+
+# 5. Run
+docker-compose -f $DEVENV_PATH/docker-compose.yml exec claude-dev bash
 ```
 
 **Add to your shell config** (`.bashrc`, `.zshrc`, etc.):
