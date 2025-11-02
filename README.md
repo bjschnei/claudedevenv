@@ -88,9 +88,35 @@ claude-up
 
 ## Installed Tools
 
-- Claude Code 
+- Claude Code
 - Python 3.11.14 (requests, beautifulsoup4, mcp)
-- Node.js 
-- Agent OS 
+- Node.js
+- Docker CLI & docker-compose
+- Agent OS
 - Skill_Seekers (with MCP server)
 - vim , git, curl, wget
+
+## Docker-in-Docker Support
+
+This container supports running Docker commands to manage containers for your projects. The host's Docker socket is mounted, allowing you to build images, run containers, and use docker-compose from inside the development environment.
+
+**How it works:**
+- The container includes Docker CLI and docker-compose plugin
+- The host's `/var/run/docker.sock` is mounted into the container
+- **Permissions are automatically configured** - works on any system without manual setup
+- The entrypoint script detects your host's docker socket GID and configures access dynamically
+- Containers you start will run on the host's Docker daemon (sibling containers)
+
+**Usage example:**
+```bash
+# Inside the container
+cd ~/workspace/my-project
+docker build -t my-app .
+docker run -p 8080:8080 my-app
+docker-compose up -d
+```
+
+**Cross-platform compatibility:**
+The setup works portably across different systems (Linux, macOS, WSL2) without requiring manual configuration. The docker socket permissions are detected and configured automatically at container startup.
+
+**Note:** Containers started from within this environment will be sibling containers running on the host, not nested containers. Volume mounts in those containers should reference host paths, not paths inside this development container.

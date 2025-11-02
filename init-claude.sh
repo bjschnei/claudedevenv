@@ -1,6 +1,26 @@
 #!/bin/bash
 set -e
 
+# Handle Docker socket permissions dynamically (works on any system)
+if [ -S /var/run/docker.sock ]; then
+    DOCKER_SOCK_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || stat -f '%g' /var/run/docker.sock 2>/dev/null)
+
+    if [ -n "$DOCKER_SOCK_GID" ]; then
+        # Check if a group with this GID already exists
+        if ! getent group "$DOCKER_SOCK_GID" >/dev/null 2>&1; then
+            # Create docker group with the correct GID
+            groupadd -g "$DOCKER_SOCK_GID" docker
+        fi
+
+        # Add developer user to the docker group
+        usermod -aG "$DOCKER_SOCK_GID" developer 2>/dev/null || true
+    fi
+fi
+
+# Switch to developer user for remaining setup
+exec su - developer -c '
+set -e
+
 # Initialize .claude directory structure if needed
 if [ ! -f ~/.claude/.initialized ]; then
     mkdir -p ~/.claude/{debug,skills,commands,agents}
@@ -17,7 +37,7 @@ if [ ! -d ~/workspace/agent-os ]; then
     fi
 fi
 
-# Optionally import custom profiles from host's agent-os if IMPORT_AGENT_OS_PROFILES is set
+# Optionally import custom profiles from host'\''s agent-os if IMPORT_AGENT_OS_PROFILES is set
 # This allows users to bring their own customized agent-os profiles
 # To use: export IMPORT_AGENT_OS_PROFILES=/path/to/your/agent-os before running claude-up
 if [ -n "$IMPORT_AGENT_OS_PROFILES" ] && [ -d "$IMPORT_AGENT_OS_PROFILES" ]; then
@@ -31,3 +51,4 @@ fi
 
 echo "Environment ready"
 exec bash
+'

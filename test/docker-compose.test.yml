@@ -2,9 +2,11 @@ services:
   claude-dev-fresh:
     build: ..
     container_name: claude-test-fresh
+    user: root  # Run as root to handle docker.sock permissions dynamically
     volumes:
       - ../test-fresh/.claude:/home/developer/.claude
       - ../test-fresh:/home/developer/workspace
+      - "/var/run/docker.sock:/var/run/docker.sock"
     working_dir: /home/developer/workspace
     stdin_open: true
     tty: true

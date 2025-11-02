@@ -7,11 +7,11 @@ LABEL maintainer="Claude Code Environment" \
 ARG USER=developer
 ARG UID=1000
 ARG GID=1000
-ARG CLAUDE_CODE_VERSION=latest
 
 ENV DEBIAN_FRONTEND=noninteractive \
     HOME=/home/$USER \
     USER=$USER \
+    PATH=/home/$USER/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -37,16 +37,24 @@ RUN NODE_VERSION=20.11.1 \
     && node --version \
     && npm --version
 
+# Install Docker CLI
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker --version
+
 RUN groupadd -g $GID $USER && \
     useradd -u $UID -g $GID -m -s /bin/bash $USER && \
     chown -R $USER:$USER /home/$USER
 
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
-
-RUN npm install -g @anthropic-ai/claude-code${CLAUDE_CODE_VERSION:+@${CLAUDE_CODE_VERSION}} \
-    && npm cache clean --force \
-    && claude --version
 
 RUN mkdir -p /home/$USER/.claude/debug /home/$USER/.claude/skills /home/$USER/.claude/commands /home/$USER/.claude/agents \
     && touch /home/$USER/.claude/.initialized \
@@ -56,6 +64,10 @@ COPY --chown=$USER:$USER --chmod=755 init-claude.sh /home/$USER/
 
 USER $USER
 WORKDIR /home/$USER
+
+# Install Claude Code using the official installer
+RUN curl -fsSL https://claude.ai/install.sh | bash \
+    && claude --version
 
 RUN git clone --depth=1 https://github.com/yusufkaraaslan/Skill_Seekers.git skill-seekers \
     && rm -rf skill-seekers/.git
