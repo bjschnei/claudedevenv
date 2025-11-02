@@ -19,8 +19,8 @@ PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml build
 # 4. Start container
 PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
 
-# 5. Run
-docker-compose -f $DEVENV_PATH/docker-compose.yml exec claude-dev bash
+# 5. Enter container
+docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
 ```
 
 **Add to your shell config** (`.bashrc`, `.zshrc`, etc.):
@@ -32,6 +32,10 @@ claude-up() {
     PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
 }
 
+claude-exec() {
+    docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
+}
+
 alias claude-compose="docker-compose -f $DEVENV_PATH/docker-compose.yml"
 ```
 
@@ -39,6 +43,7 @@ Then use:
 ```bash
 cd /path/to/your/project
 claude-up          # Starts with current directory mounted
+claude-exec        # Enter container as developer user
 claude-compose down # Stop
 ```
 
