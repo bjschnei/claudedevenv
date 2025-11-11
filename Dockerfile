@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm
+FROM python:3.11
 
 LABEL maintainer="Claude Code Environment" \
       description="Development environment with Claude Code, Agent OS, and Skill_Seekers" \
