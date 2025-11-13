@@ -47,6 +47,83 @@ claude-exec        # Enter container as developer user
 claude-compose down # Stop
 ```
 
+## Running Multiple Instances (Git Worktrees)
+
+The `claude-worktree.sh` script enables running multiple Claude Code instances simultaneously in different directories, perfect for working with git worktrees.
+
+**Quick start:**
+```bash
+# From the claudedevenv directory
+./claude-worktree.sh up /path/to/worktree-1
+./claude-worktree.sh up /path/to/worktree-2
+./claude-worktree.sh up /path/to/worktree-3
+
+# List all running instances
+./claude-worktree.sh list
+
+# Attach to a specific instance
+./claude-worktree.sh attach /path/to/worktree-1
+
+# Stop an instance
+./claude-worktree.sh down /path/to/worktree-1
+```
+
+**How it works:**
+- Each worktree gets its own isolated container
+- Container names are automatically generated from the directory name
+- All instances share the same `~/.claude` configuration (API keys, skills)
+- Docker socket is mounted for nested Docker operations
+- No port conflicts or naming collisions
+
+**Available commands:**
+```bash
+./claude-worktree.sh up <path>       # Start instance in worktree
+./claude-worktree.sh down <path>     # Stop instance
+./claude-worktree.sh attach <path>   # Attach to running instance
+./claude-worktree.sh logs <path>     # Show logs
+./claude-worktree.sh list            # List all running instances
+```
+
+**Example with git worktrees:**
+```bash
+# Create worktrees for different features
+git worktree add ../myproject-feature-1 feature-1
+git worktree add ../myproject-feature-2 feature-2
+git worktree add ../myproject-bugfix bugfix-123
+
+# Start Claude Code in each worktree
+cd /path/to/claudedevenv
+./claude-worktree.sh up ../myproject-feature-1
+./claude-worktree.sh up ../myproject-feature-2
+./claude-worktree.sh up ../myproject-bugfix
+
+# Work in multiple terminal windows
+# Terminal 1:
+./claude-worktree.sh attach ../myproject-feature-1
+
+# Terminal 2:
+./claude-worktree.sh attach ../myproject-feature-2
+
+# Terminal 3:
+./claude-worktree.sh attach ../myproject-bugfix
+```
+
+**Optional: Add to shell config:**
+```bash
+export DEVENV_PATH=/path/to/claudedevenv
+
+claude-worktree() {
+    $DEVENV_PATH/claude-worktree.sh "$@"
+}
+```
+
+Then use from anywhere:
+```bash
+claude-worktree up /path/to/worktree
+claude-worktree list
+claude-worktree attach /path/to/worktree
+```
+
 ## Adding Skills via Claude Code
 
 From inside the container, use Claude Code to generate documentation skills with natural language:

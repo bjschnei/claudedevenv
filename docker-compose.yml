@@ -1,7 +1,7 @@
 services:
   claude-dev:
     build: .
-    container_name: claude-code-dev
+    container_name: ${CONTAINER_NAME:-claude-code-dev}
     user: root  # Run as root to handle docker.sock permissions dynamically
     volumes:
       - "${HOME}/.claude:/home/developer/.claude"
