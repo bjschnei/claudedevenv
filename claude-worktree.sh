@@ -127,7 +127,7 @@ cmd_attach() {
     local container_name="${project_name}-dev"
 
     echo "Attaching to container: $container_name"
-    docker exec -it "$container_name" bash
+    docker exec -it -u developer "$container_name" bash
 }
 
 # Show logs
