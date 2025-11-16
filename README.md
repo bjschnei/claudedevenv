@@ -156,6 +156,42 @@ export IMPORT_AGENT_OS_PROFILES=/path/to/your/agent-os
 claude-up
 ```
 
+## Claude Code Commands
+
+The environment includes pre-installed Claude Code slash commands that are automatically copied to your project's `.claude/commands/` directory on first run.
+
+### Available Commands
+
+**`/init-project` - Full-Featured Project Initialization**
+
+A comprehensive command that scaffolds complete projects with Docker, development tools, and modern tech stacks. It interactively guides you through:
+- Backend framework selection (FastAPI, Express, NestJS, Django, Go, etc.)
+- Frontend framework selection (React, Next.js, Vue, Svelte, Streamlit, etc.)
+- Database setup (PostgreSQL, MySQL, MongoDB, Redis, SQLite)
+- AI provider integration (OpenAI, Anthropic, LangChain/LangGraph)
+- Architecture choice (monorepo vs. separate services)
+
+The command automatically:
+- Researches and uses the latest compatible versions
+- Generates multi-stage Dockerfiles (development + production)
+- Creates docker-compose configurations
+- Sets up Makefile with common commands
+- Includes dev-shell.sh for easy container access
+- Creates comprehensive .gitignore and .dockerignore
+- Generates starter code and project structure
+- Sets up testing frameworks and linting
+
+**Usage:**
+```bash
+cd ~/workspace
+claude
+
+# Then in Claude Code:
+/init-project
+```
+
+Claude will guide you through the setup process interactively, confirming all choices before generating files.
+
 ## Data Persistence
 
 | Container Path | Host Path | Purpose |

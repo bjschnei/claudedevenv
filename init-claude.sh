@@ -27,6 +27,21 @@ if [ ! -f ~/.claude/.initialized ]; then
     touch ~/.claude/.initialized
 fi
 
+# Install command templates from container to workspace
+if [ -d ~/templates/commands ]; then
+    mkdir -p ~/workspace/.claude/commands
+    # Copy templates, but don'\''t overwrite existing commands
+    for cmd_file in ~/templates/commands/*.md; do
+        if [ -f "$cmd_file" ]; then
+            cmd_name=$(basename "$cmd_file")
+            if [ ! -f ~/workspace/.claude/commands/"$cmd_name" ]; then
+                echo "Installing command: $cmd_name"
+                cp "$cmd_file" ~/workspace/.claude/commands/
+            fi
+        fi
+    done
+fi
+
 # Check if project needs agent-os initialization
 if [ ! -d ~/workspace/agent-os ]; then
     if [ -f ~/agent-os/scripts/project-install.sh ]; then

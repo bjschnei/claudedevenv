@@ -62,6 +62,9 @@ RUN mkdir -p /home/$USER/.claude/debug /home/$USER/.claude/skills /home/$USER/.c
 
 COPY --chown=$USER:$USER --chmod=755 init-claude.sh /home/$USER/
 
+# Copy command templates
+COPY --chown=$USER:$USER templates/ /home/$USER/templates/
+
 USER $USER
 WORKDIR /home/$USER
 
