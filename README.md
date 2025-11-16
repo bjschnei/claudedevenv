@@ -2,87 +2,55 @@
 
 Docker container with Claude Code CLI, Python 3.11, Node.js 20, Agent OS, and Skill_Seekers. Your project files stay on host, tools run in container.
 
-## Setup
+## Quick Start
+
+The recommended way to use this environment is with the `claude-worktree.sh` script, which handles everything automatically.
 
 ```bash
 # 1. Clone this repository
 git clone <this-repo>
 cd claudedevenv
-DEVENV_PATH=$(pwd)
 
-# 2. Navigate to your project
-cd /path/to/your/project
+# 2. Start Claude Code in your project
+./claude-worktree.sh up /path/to/your/project
 
-# 3. Build (one time)
-PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml build
+# 3. Attach to the running container
+./claude-worktree.sh attach /path/to/your/project
 
-# 4. Start container
-PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
-
-# 5. Enter container
-docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
+# 4. Inside the container, you're ready to code!
+cd ~/workspace
+claude
 ```
-
-**Add to your shell config** (`.bashrc`, `.zshrc`, etc.):
-```bash
-# Replace /path/to/claudedevenv with actual path
-export DEVENV_PATH=/path/to/claudedevenv
-
-claude-up() {
-    PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
-}
-
-claude-exec() {
-    docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
-}
-
-alias claude-compose="docker-compose -f $DEVENV_PATH/docker-compose.yml"
-```
-
-Then use:
-```bash
-cd /path/to/your/project
-claude-up          # Starts with current directory mounted
-claude-exec        # Enter container as developer user
-claude-compose down # Stop
-```
-
-## Running Multiple Instances (Git Worktrees)
-
-The `claude-worktree.sh` script enables running multiple Claude Code instances simultaneously in different directories, perfect for working with git worktrees.
-
-**Quick start:**
-```bash
-# From the claudedevenv directory
-./claude-worktree.sh up /path/to/worktree-1
-./claude-worktree.sh up /path/to/worktree-2
-./claude-worktree.sh up /path/to/worktree-3
-
-# List all running instances
-./claude-worktree.sh list
-
-# Attach to a specific instance
-./claude-worktree.sh attach /path/to/worktree-1
-
-# Stop an instance
-./claude-worktree.sh down /path/to/worktree-1
-```
-
-**How it works:**
-- Each worktree gets its own isolated container
-- Container names are automatically generated from the directory name
-- All instances share the same `~/.claude` configuration (API keys, skills)
-- Docker socket is mounted for nested Docker operations
-- No port conflicts or naming collisions
 
 **Available commands:**
 ```bash
-./claude-worktree.sh up <path>       # Start instance in worktree
+./claude-worktree.sh up <path>       # Start instance in a directory
 ./claude-worktree.sh down <path>     # Stop instance
 ./claude-worktree.sh attach <path>   # Attach to running instance
 ./claude-worktree.sh logs <path>     # Show logs
 ./claude-worktree.sh list            # List all running instances
 ```
+
+**Optional: Add to shell config** (`.bashrc`, `.zshrc`, etc.) for convenience:
+```bash
+export DEVENV_PATH=/path/to/claudedevenv
+
+claude-worktree() {
+    $DEVENV_PATH/claude-worktree.sh "$@"
+}
+```
+
+Then use from anywhere:
+```bash
+claude-worktree up /path/to/your/project
+claude-worktree attach /path/to/your/project
+claude-worktree list
+claude-worktree down /path/to/your/project
+```
+
+## Running Multiple Instances
+
+Perfect for working with git worktrees or multiple projects simultaneously. Each directory gets its own isolated container with no conflicts.
 
 **Example with git worktrees:**
 ```bash
@@ -92,10 +60,12 @@ git worktree add ../myproject-feature-2 feature-2
 git worktree add ../myproject-bugfix bugfix-123
 
 # Start Claude Code in each worktree
-cd /path/to/claudedevenv
 ./claude-worktree.sh up ../myproject-feature-1
 ./claude-worktree.sh up ../myproject-feature-2
 ./claude-worktree.sh up ../myproject-bugfix
+
+# List all running instances
+./claude-worktree.sh list
 
 # Work in multiple terminal windows
 # Terminal 1:
@@ -108,20 +78,49 @@ cd /path/to/claudedevenv
 ./claude-worktree.sh attach ../myproject-bugfix
 ```
 
-**Optional: Add to shell config:**
+**How it works:**
+- Each directory gets its own isolated container
+- Container names are automatically generated from the directory name
+- All instances share the same `~/.claude` configuration (API keys, skills)
+- Docker socket is mounted for nested Docker operations
+- No port conflicts or naming collisions
+
+## Advanced: Manual Docker Compose Usage
+
+If you need more control over docker-compose options, you can use docker-compose directly:
+
+```bash
+# Set up environment
+cd claudedevenv
+DEVENV_PATH=$(pwd)
+
+# Build (one time)
+cd /path/to/your/project
+PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml build
+
+# Start container
+PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
+
+# Enter container
+docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
+
+# Stop
+docker-compose -f $DEVENV_PATH/docker-compose.yml down
+```
+
+**Optional shell functions:**
 ```bash
 export DEVENV_PATH=/path/to/claudedevenv
 
-claude-worktree() {
-    $DEVENV_PATH/claude-worktree.sh "$@"
+claude-up() {
+    PROJECT_DIR=$(pwd) docker-compose -f $DEVENV_PATH/docker-compose.yml up -d
 }
-```
 
-Then use from anywhere:
-```bash
-claude-worktree up /path/to/worktree
-claude-worktree list
-claude-worktree attach /path/to/worktree
+claude-exec() {
+    docker-compose -f $DEVENV_PATH/docker-compose.yml exec -u developer claude-dev bash
+}
+
+alias claude-compose="docker-compose -f $DEVENV_PATH/docker-compose.yml"
 ```
 
 ## Adding Skills via Claude Code

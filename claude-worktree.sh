@@ -6,6 +6,20 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Detect which docker compose command to use
+detect_docker_compose() {
+    if docker compose version &>/dev/null; then
+        echo "docker compose"
+    elif docker-compose --version &>/dev/null; then
+        echo "docker-compose"
+    else
+        echo "Error: Neither 'docker compose' nor 'docker-compose' is available" >&2
+        exit 1
+    fi
+}
+
+DOCKER_COMPOSE=$(detect_docker_compose)
+
 show_usage() {
     cat <<EOF
 Usage: $(basename "$0") [OPTIONS] <command> [worktree-path]
@@ -80,7 +94,7 @@ cmd_up() {
     PROJECT_DIR="$abs_path" \
     CONTAINER_NAME="$container_name" \
     COMPOSE_PROJECT_NAME="$project_name" \
-    docker-compose up -d
+    $DOCKER_COMPOSE up -d
 
     echo
     echo "Claude Code is starting..."
@@ -107,7 +121,7 @@ cmd_down() {
 
     cd "$SCRIPT_DIR"
     COMPOSE_PROJECT_NAME="$project_name" \
-    docker-compose down
+    $DOCKER_COMPOSE down
 
     echo "Instance stopped."
 }
@@ -145,7 +159,7 @@ cmd_logs() {
 
     cd "$SCRIPT_DIR"
     COMPOSE_PROJECT_NAME="$project_name" \
-    docker-compose logs -f
+    $DOCKER_COMPOSE logs -f
 }
 
 # List all running Claude Code instances
