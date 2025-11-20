@@ -29,14 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
-RUN NODE_VERSION=20.11.1 \
-    && ARCH=$(uname -m | sed 's/aarch64/arm64/;s/x86_64/x64/') \
-    && wget -q https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${ARCH}.tar.xz \
-    && tar -xJf node-v${NODE_VERSION}-linux-${ARCH}.tar.xz -C /usr/local --strip-components=1 \
-    && rm node-v${NODE_VERSION}-linux-${ARCH}.tar.xz \
-    && node --version \
-    && npm --version
-
 # Install Docker CLI
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
