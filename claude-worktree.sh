@@ -27,6 +27,7 @@ Usage: $(basename "$0") [OPTIONS] <command> [worktree-path]
 Commands:
     up <path>       Start Claude Code instance in the specified worktree
     down <path>     Stop Claude Code instance in the specified worktree
+    rebuild <path>  Rebuild and restart Claude Code instance
     attach <path>   Attach to running Claude Code instance
     logs <path>     Show logs from Claude Code instance
     list            List all running Claude Code instances
@@ -38,6 +39,9 @@ Options:
 Examples:
     # Start Claude Code in a worktree
     $(basename "$0") up /path/to/worktree
+
+    # Rebuild and restart an instance
+    $(basename "$0") rebuild /path/to/worktree
 
     # Attach to the running instance
     $(basename "$0") attach /path/to/worktree
@@ -126,6 +130,52 @@ cmd_down() {
     echo "Instance stopped."
 }
 
+# Rebuild a Claude Code instance
+cmd_rebuild() {
+    local worktree_path="$1"
+
+    if [ -z "$worktree_path" ]; then
+        echo "Error: Worktree path is required"
+        echo "Usage: $(basename "$0") rebuild <worktree-path>"
+        exit 1
+    fi
+
+    if [ ! -d "$worktree_path" ]; then
+        echo "Error: Directory does not exist: $worktree_path"
+        exit 1
+    fi
+
+    local abs_path=$(cd "$worktree_path" && pwd)
+    local project_name=$(get_project_name "$abs_path")
+    local container_name="${project_name}-dev"
+
+    echo "Rebuilding Claude Code instance:"
+    echo "  Worktree: $abs_path"
+    echo "  Project:  $project_name"
+    echo "  Container: $container_name"
+    echo
+
+    cd "$SCRIPT_DIR"
+
+    echo "Stopping existing instance..."
+    COMPOSE_PROJECT_NAME="$project_name" \
+    $DOCKER_COMPOSE down
+
+    echo
+    echo "Rebuilding and starting..."
+    PROJECT_DIR="$abs_path" \
+    CONTAINER_NAME="$container_name" \
+    COMPOSE_PROJECT_NAME="$project_name" \
+    $DOCKER_COMPOSE up -d --build
+
+    echo
+    echo "Claude Code has been rebuilt and is starting..."
+    echo "To attach to the container, run:"
+    echo "  $(basename "$0") attach \"$worktree_path\""
+    echo "Or manually:"
+    echo "  docker exec -it $container_name bash"
+}
+
 # Attach to a running instance
 cmd_attach() {
     local worktree_path="$1"
@@ -189,6 +239,10 @@ main() {
         down)
             shift
             cmd_down "$@"
+            ;;
+        rebuild)
+            shift
+            cmd_rebuild "$@"
             ;;
         attach)
             shift

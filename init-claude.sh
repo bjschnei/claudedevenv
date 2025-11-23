@@ -64,6 +64,15 @@ if [ -n "$IMPORT_AGENT_OS_PROFILES" ] && [ -d "$IMPORT_AGENT_OS_PROFILES" ]; the
     fi
 fi
 
+# Setup Skill Seekers MCP integration if not already configured
+if [ -f ~/skill-seekers/setup_mcp.sh ] && [ ! -f ~/.claude-mcp-configured ]; then
+    echo "Setting up Skill Seekers MCP integration..."
+    cd ~/skill-seekers
+    bash setup_mcp.sh 2>/dev/null || echo "Warning: Skill Seekers MCP setup encountered issues"
+    touch ~/.claude-mcp-configured
+    echo "Skill Seekers MCP integration configured"
+fi
+
 echo "Environment ready"
 exec bash
 '

@@ -65,7 +65,9 @@ RUN curl -fsSL https://claude.ai/install.sh | bash \
     && claude --version
 
 RUN git clone --depth=1 https://github.com/yusufkaraaslan/Skill_Seekers.git skill-seekers \
-    && rm -rf skill-seekers/.git
+    && rm -rf skill-seekers/.git \
+    && cd skill-seekers \
+    && pip install --no-cache-dir -e .
 
 RUN curl -fsSL https://raw.githubusercontent.com/buildermethods/agent-os/main/scripts/base-install.sh \
         -o /tmp/base-install.sh \
