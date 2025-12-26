@@ -69,6 +69,23 @@ get_project_name() {
     echo "claude-${dir_name}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g'
 }
 
+# Detect if a path is a git worktree and return the git common directory
+# Returns empty string if not a worktree or not a git repo
+get_git_common_dir() {
+    local path="$1"
+    local abs_path=$(cd "$path" 2>/dev/null && pwd || echo "$path")
+
+    # Check if this is a git worktree (has .git file, not directory)
+    if [ -f "$abs_path/.git" ]; then
+        # This is a worktree - get the git common directory
+        local git_common_dir=$(cd "$abs_path" && git rev-parse --git-common-dir 2>/dev/null)
+        if [ -n "$git_common_dir" ]; then
+            # Convert to absolute path
+            echo $(cd "$abs_path" && cd "$git_common_dir" && pwd)
+        fi
+    fi
+}
+
 # Start a Claude Code instance
 cmd_up() {
     local worktree_path="$1"
@@ -87,18 +104,30 @@ cmd_up() {
     local abs_path=$(cd "$worktree_path" && pwd)
     local project_name=$(get_project_name "$abs_path")
     local container_name="${project_name}-dev"
+    local git_common_dir=$(get_git_common_dir "$abs_path")
 
     echo "Starting Claude Code instance:"
     echo "  Worktree: $abs_path"
     echo "  Project:  $project_name"
     echo "  Container: $container_name"
+    if [ -n "$git_common_dir" ]; then
+        echo "  Git common dir: $git_common_dir (worktree detected)"
+    fi
     echo
 
     cd "$SCRIPT_DIR"
+
+    # Build compose command with optional worktree support
+    local compose_files="-f docker-compose.yml"
+    if [ -n "$git_common_dir" ]; then
+        compose_files="$compose_files -f docker-compose.worktree.yml"
+    fi
+
     PROJECT_DIR="$abs_path" \
     CONTAINER_NAME="$container_name" \
     COMPOSE_PROJECT_NAME="$project_name" \
-    $DOCKER_COMPOSE up -d
+    GIT_COMMON_DIR="${git_common_dir:-}" \
+    $DOCKER_COMPOSE $compose_files up -d
 
     echo
     echo "Claude Code is starting..."
@@ -148,25 +177,36 @@ cmd_rebuild() {
     local abs_path=$(cd "$worktree_path" && pwd)
     local project_name=$(get_project_name "$abs_path")
     local container_name="${project_name}-dev"
+    local git_common_dir=$(get_git_common_dir "$abs_path")
 
     echo "Rebuilding Claude Code instance:"
     echo "  Worktree: $abs_path"
     echo "  Project:  $project_name"
     echo "  Container: $container_name"
+    if [ -n "$git_common_dir" ]; then
+        echo "  Git common dir: $git_common_dir (worktree detected)"
+    fi
     echo
 
     cd "$SCRIPT_DIR"
 
+    # Build compose command with optional worktree support
+    local compose_files="-f docker-compose.yml"
+    if [ -n "$git_common_dir" ]; then
+        compose_files="$compose_files -f docker-compose.worktree.yml"
+    fi
+
     echo "Stopping existing instance..."
     COMPOSE_PROJECT_NAME="$project_name" \
-    $DOCKER_COMPOSE down
+    $DOCKER_COMPOSE $compose_files down
 
     echo
     echo "Rebuilding and starting..."
     PROJECT_DIR="$abs_path" \
     CONTAINER_NAME="$container_name" \
     COMPOSE_PROJECT_NAME="$project_name" \
-    $DOCKER_COMPOSE up -d --build
+    GIT_COMMON_DIR="${git_common_dir:-}" \
+    $DOCKER_COMPOSE $compose_files up -d --build
 
     echo
     echo "Claude Code has been rebuilt and is starting..."

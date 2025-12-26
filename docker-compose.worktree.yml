@@ -1,0 +1,5 @@
+services:
+  claude-dev:
+    volumes:
+      # Mount the git common directory at its original path so worktree .git file paths resolve correctly
+      - "${GIT_COMMON_DIR}:${GIT_COMMON_DIR}:ro"
