@@ -5,6 +5,7 @@ services:
     user: root  # Run as root to handle docker.sock permissions dynamically
     volumes:
       - "${HOME}/.claude:/home/developer/.claude"
+      - "${HOME}/.claude:${HOME}/.claude:ro"
       - "${PROJECT_DIR:-.}:/home/developer/workspace"
       - "/var/run/docker.sock:/var/run/docker.sock"
     working_dir: /home/developer/workspace
