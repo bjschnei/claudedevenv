@@ -73,6 +73,19 @@ if [ -f ~/skill-seekers/setup_mcp.sh ] && [ ! -f ~/.claude-mcp-configured ]; the
     echo "Skill Seekers MCP integration configured"
 fi
 
+# Note: If .mcp.json contains Docker MCP Gateway config from host, it will
+# show as "failed" in /mcp (expected - Docker MCP Gateway runs on host only).
+# The in-container Playwright MCP configured below will work correctly.
+
+# Setup Playwright MCP if not already configured
+if [ ! -f ~/.claude-playwright-mcp-configured ]; then
+    echo "Setting up Playwright MCP..."
+    cd ~/workspace
+    claude mcp add playwright -- npx @playwright/mcp@latest --browser chromium --headless --no-sandbox --isolated 2>/dev/null || echo "Warning: Playwright MCP setup encountered issues"
+    touch ~/.claude-playwright-mcp-configured
+    echo "Playwright MCP configured"
+fi
+
 echo "Environment ready"
 exec bash
 '

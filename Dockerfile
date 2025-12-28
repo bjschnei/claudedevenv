@@ -29,6 +29,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js (required for Playwright MCP)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version
+
+# Install Playwright system dependencies for Chromium
+RUN npx playwright install-deps chromium
+
 # Install Docker CLI
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
@@ -63,6 +73,9 @@ WORKDIR /home/$USER
 # Install Claude Code using the official installer
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && claude --version
+
+# Install Playwright Chromium browser (as user)
+RUN npx playwright install chromium
 
 RUN git clone --depth=1 https://github.com/yusufkaraaslan/Skill_Seekers.git skill-seekers \
     && rm -rf skill-seekers/.git \

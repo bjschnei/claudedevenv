@@ -60,6 +60,44 @@ Notes:
 EOF
 }
 
+# Check and offer Docker MCP setup
+check_docker_mcp() {
+    local worktree_path="$1"
+
+    # Check if docker mcp is available
+    if ! docker mcp --help &>/dev/null; then
+        return 0  # Docker MCP Toolkit not installed, skip
+    fi
+
+    # Check if there are MCP servers enabled
+    local server_output=$(docker mcp server list 2>/dev/null)
+    local enabled_count=$(echo "$server_output" | grep -E "^\w" | grep -v "^NAME" | grep -v "^-" | grep -v "^MCP" | grep -v "^Tip:" | wc -l | tr -d ' ')
+
+    if [ "$enabled_count" -eq 0 ]; then
+        return 0  # No servers enabled, skip
+    fi
+
+    # Check if Claude Code is already connected
+    if docker mcp client ls 2>/dev/null | grep -q "claude-code: connected"; then
+        return 0  # Already connected
+    fi
+
+    echo
+    echo "┌──────────────────────────────────────────────────────────────┐"
+    echo "│  Docker MCP Toolkit detected with $enabled_count server(s) enabled"
+    echo "│  Claude Code is not connected to the Docker MCP Gateway."
+    echo "└──────────────────────────────────────────────────────────────┘"
+    echo
+    read -p "Connect Claude Code to Docker MCP Gateway? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Connecting Claude Code to Docker MCP Gateway..."
+        (cd "$worktree_path" && docker mcp client connect claude-code)
+        echo
+        echo "Connected! Restart Claude Code to use Docker MCP servers."
+    fi
+}
+
 # Generate a project name from a path
 get_project_name() {
     local path="$1"
@@ -105,6 +143,9 @@ cmd_up() {
     local project_name=$(get_project_name "$abs_path")
     local container_name="${project_name}-dev"
     local git_common_dir=$(get_git_common_dir "$abs_path")
+
+    # Check if Docker MCP should be configured
+    check_docker_mcp "$abs_path"
 
     echo "Starting Claude Code instance:"
     echo "  Worktree: $abs_path"
