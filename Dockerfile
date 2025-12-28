@@ -36,7 +36,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && rm -rf /var/lib/apt/lists/* \
     && node --version && npm --version
 
-# Install Playwright system dependencies for Chromium
+# Install Playwright system dependencies
+# Browser is installed per-user at runtime via init-claude.sh
 RUN npx playwright install-deps chromium
 
 # Install Docker CLI
@@ -74,8 +75,8 @@ WORKDIR /home/$USER
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && claude --version
 
-# Install Playwright Chromium browser (as user)
-RUN npx playwright install chromium
+# Pre-cache Playwright MCP package
+RUN npx @playwright/mcp@latest --version
 
 RUN git clone --depth=1 https://github.com/yusufkaraaslan/Skill_Seekers.git skill-seekers \
     && rm -rf skill-seekers/.git \

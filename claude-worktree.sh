@@ -60,6 +60,44 @@ Notes:
 EOF
 }
 
+# Connect container to project-related Docker networks
+# This allows the Claude container to communicate with project services (databases, APIs, etc.)
+connect_to_project_networks() {
+    local container_name="$1"
+    local project_dir="$2"
+
+    # Extract base project name from directory
+    local base_name=$(basename "$project_dir" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')
+
+    # Find networks that match the project name patterns
+    # Common patterns: projectname_default, projectname_app-network, projectname-network, etc.
+    local networks=$(docker network ls --format '{{.Name}}' | grep -E "^${base_name}[_-]" 2>/dev/null || true)
+
+    if [ -z "$networks" ]; then
+        return 0  # No matching networks found
+    fi
+
+    echo "Connecting to project networks..."
+    local connected=0
+    while IFS= read -r network; do
+        if [ -n "$network" ]; then
+            # Check if already connected
+            if docker network inspect "$network" --format '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null | grep -q "$container_name"; then
+                continue  # Already connected
+            fi
+
+            if docker network connect "$network" "$container_name" 2>/dev/null; then
+                echo "  Connected to: $network"
+                connected=$((connected + 1))
+            fi
+        fi
+    done <<< "$networks"
+
+    if [ $connected -gt 0 ]; then
+        echo "  $connected network(s) connected - container can reach project services"
+    fi
+}
+
 # Check and offer Docker MCP setup
 check_docker_mcp() {
     local worktree_path="$1"
@@ -170,6 +208,9 @@ cmd_up() {
     GIT_COMMON_DIR="${git_common_dir:-}" \
     $DOCKER_COMPOSE $compose_files up -d
 
+    # Connect to project-related networks for service communication
+    connect_to_project_networks "$container_name" "$abs_path"
+
     echo
     echo "Claude Code is starting..."
     echo "To attach to the container, run:"
@@ -248,6 +289,9 @@ cmd_rebuild() {
     COMPOSE_PROJECT_NAME="$project_name" \
     GIT_COMMON_DIR="${git_common_dir:-}" \
     $DOCKER_COMPOSE $compose_files up -d --build
+
+    # Connect to project-related networks for service communication
+    connect_to_project_networks "$container_name" "$abs_path"
 
     echo
     echo "Claude Code has been rebuilt and is starting..."

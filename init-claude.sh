@@ -78,12 +78,28 @@ fi
 # The in-container Playwright MCP configured below will work correctly.
 
 # Setup Playwright MCP if not already configured
+# Chrome on x86_64, Chromium on ARM64 (Chrome not available for ARM64)
 if [ ! -f ~/.claude-playwright-mcp-configured ]; then
     echo "Setting up Playwright MCP..."
     cd ~/workspace
-    claude mcp add playwright -- npx @playwright/mcp@latest --browser chromium --headless --no-sandbox --isolated 2>/dev/null || echo "Warning: Playwright MCP setup encountered issues"
+    if [ "$(uname -m)" = "aarch64" ]; then
+        claude mcp add playwright -- npx @playwright/mcp@latest --browser chromium --headless --isolated 2>/dev/null || echo "Warning: Playwright MCP setup encountered issues"
+    else
+        claude mcp add playwright -- npx @playwright/mcp@latest --headless --isolated 2>/dev/null || echo "Warning: Playwright MCP setup encountered issues"
+    fi
     touch ~/.claude-playwright-mcp-configured
     echo "Playwright MCP configured"
+fi
+
+# Create Chrome symlink for ARM64 (Chromium as Chrome substitute)
+# This allows standard Playwright plugins to find a browser at the expected Chrome location
+if [ "$(uname -m)" = "aarch64" ] && [ ! -L /opt/google/chrome/chrome ]; then
+    CHROMIUM_BIN=$(find ~/.cache/ms-playwright -name "chrome" -path "*/chrome-linux/*" -type f 2>/dev/null | head -1)
+    if [ -n "$CHROMIUM_BIN" ]; then
+        sudo mkdir -p /opt/google/chrome
+        sudo ln -sf "$CHROMIUM_BIN" /opt/google/chrome/chrome
+        echo "Chrome symlink created -> $CHROMIUM_BIN"
+    fi
 fi
 
 echo "Environment ready"

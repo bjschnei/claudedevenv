@@ -11,5 +11,10 @@ services:
     working_dir: /home/developer/workspace
     stdin_open: true
     tty: true
+    # Required for Chromium sandbox (Playwright MCP browser automation)
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
     environment:
       - IMPORT_AGENT_OS_PROFILES=${IMPORT_AGENT_OS_PROFILES:-}
